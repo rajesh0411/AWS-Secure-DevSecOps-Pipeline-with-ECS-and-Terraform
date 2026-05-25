@@ -1,0 +1,39 @@
+#!/bin/bash
+set -euxo pipefail
+
+# Update system
+yum update -y
+
+# Install packages
+yum install -y git
+
+# Install Docker
+yum install -y docker
+
+# Start and enable Docker
+systemctl enable docker
+systemctl start docker
+
+# Create dedicated application user
+useradd --create-home --shell /bin/bash dockeruser
+
+# Add user to docker group
+usermod -aG docker dockeruser
+
+# Create application directory
+mkdir -p /opt/secure-flask-app
+
+# Set ownership
+chown -R dockeruser:dockeruser /opt/secure-flask-app
+
+# Clone repo as app user
+sudo -u dockeruser git clone https://github.com/rajesh0411/AWS-Secure-DevSecOps-Pipeline-with-ECS-and-Terraform.git /opt/secure-flask-app
+
+# Move into app directory
+cd /opt/secure-flask-app
+
+# Build Docker image as non-root user
+sudo -u dockeruser docker build -t secure-flask-app:latest .
+
+# Run container 
+sudo -u dockeruser docker run -d  -p 5000:5000 secure-flask-app:latest
